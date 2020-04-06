@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <v-app class="app">
     <v-overlay v-if="loading" color="#F8F9FA" opacity="1" z-index="9999">
       <div class="loader">
@@ -34,10 +34,12 @@
 <script lang="ts">
 import Vue from 'vue'
 import { MetaInfo } from 'vue-meta'
+import Data from '@/data/data.json'
 import ScaleLoader from 'vue-spinner/src/ScaleLoader.vue'
 import SideNavigation from '@/components/SideNavigation.vue'
 import NoScript from '@/components/NoScript.vue'
 import DevelopmentModeMark from '@/components/DevelopmentModeMark.vue'
+import { convertDateToSimpleFormat } from '@/utils/formatDate'
 
 type LocalData = {
   hasNavigation: boolean
@@ -71,12 +73,10 @@ export default Vue.extend({
   },
   mounted() {
     this.loading = false
-    const elementList = document.querySelectorAll(
-      '.v-data-table__wrapper table'
-    )
-    elementList.forEach(element => {
-      element.setAttribute('tabindex', '0')
-    })
+    this.getMatchMedia().addListener(this.hideNavigation)
+  },
+  beforeDestroy() {
+    this.getMatchMedia().removeListener(this.hideNavigation)
   },
   methods: {
     openNavigation(): void {
@@ -84,16 +84,31 @@ export default Vue.extend({
     },
     hideNavigation(): void {
       this.isOpenNavigation = false
+    },
+    getMatchMedia(): MediaQueryList {
+      return window.matchMedia('(min-width: 601px)')
     }
   },
   head(): MetaInfo {
-    const { htmlAttrs } = this.$nuxtI18nSeo()
+    const { htmlAttrs, meta } = this.$nuxtI18nSeo()
+    const ogLocale =
+      meta && meta.length > 0
+        ? meta[0]
+        : {
+            hid: 'og:locale',
+            name: 'og:locale',
+            content: this.$i18n.locale
+          }
     return {
       htmlAttrs,
       link: [
         {
           rel: 'canonical',
           href: `https://stopcovid19.metro.tokyo.lg.jp${this.$route.path}`
+        },
+        {
+          rel: 'stylesheet',
+          href: 'https://api.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.css'
         }
       ],
       meta: [
@@ -105,9 +120,12 @@ export default Vue.extend({
         {
           hid: 'description',
           name: 'description',
-          content: this.$tc(
-            '当サイトは新型コロナウイルス感染症 (COVID-19) に関する最新情報を提供するために、東京都が開設したものです。'
-          )
+          content:
+            convertDateToSimpleFormat(Data.lastUpdate) +
+            ' 更新：　' +
+            this.$tc(
+              '当サイトは新型コロナウイルス感染症 (COVID-19) に関する最新情報を提供するために、東京都が開設したものです。'
+            )
         },
         {
           hid: 'og:site_name',
@@ -124,11 +142,7 @@ export default Vue.extend({
           property: 'og:url',
           content: `https://stopcovid19.metro.tokyo.lg.jp${this.$route.path}`
         },
-        {
-          hid: 'og:locale',
-          property: 'og:locale',
-          content: this.$i18n.locale
-        },
+        ogLocale,
         {
           hid: 'og:title',
           property: 'og:title',
@@ -142,9 +156,12 @@ export default Vue.extend({
         {
           hid: 'og:description',
           property: 'og:description',
-          content: this.$tc(
-            '当サイトは新型コロナウイルス感染症 (COVID-19) に関する最新情報を提供するために、東京都が開設したものです。'
-          )
+          content:
+            convertDateToSimpleFormat(Data.lastUpdate) +
+            ' 更新：　' +
+            this.$tc(
+              '当サイトは新型コロナウイルス感染症 (COVID-19) に関する最新情報を提供するために、東京都が開設したものです。'
+            )
         },
         {
           hid: 'og:image',
@@ -201,6 +218,10 @@ export default Vue.extend({
     grid-template-columns: 325px 1fr;
     grid-template-rows: auto;
   }
+}
+
+.naviContainer {
+  background-color: $white;
 }
 
 @include lessThan($small) {

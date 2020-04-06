@@ -34,7 +34,7 @@
             <a
               href="https://www.fukushihoken.metro.tokyo.lg.jp/iryo/kansen/coronasodan.html"
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
             >
               <span>{{ $t('各保健所の電話番号は福祉保健局HPへ') }}</span>
               <v-icon size="18">
@@ -69,6 +69,7 @@
               :class="$style.AdvisoryTelephoneIcon"
               src="/flow/phone-24px.svg"
               aria-hidden="true"
+              :alt="$t('電話番号')"
             />
             03-5320-4592
           </a>
@@ -159,7 +160,10 @@
     &:focus {
       color: inherit;
       text-decoration: none;
-      outline: 1px dotted $gray-3;
+      @media screen {
+        // printだとoutlineが太くなってしまい読みにくいので、消す処理
+        outline: 1px dotted $gray-3;
+      }
     }
 
     &Icon {
@@ -179,7 +183,7 @@
 
   &WhiteBox {
     background-color: $white;
-    width: 160px;
+    max-width: 160px;
     padding: 10px;
 
     &Sentense {

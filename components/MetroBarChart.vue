@@ -5,7 +5,11 @@
         <slot name="description" />
       </small>
     </template>
+    <h4 :id="`${titleId}-graph`" class="visually-hidden">
+      {{ $t(`{title}のグラフ`, { title }) }}
+    </h4>
     <bar
+      :ref="'barChart'"
       :style="{ display: canvas ? 'block' : 'none' }"
       :chart-id="chartId"
       :chart-data="displayData"
@@ -20,10 +24,17 @@
       :hide-default-footer="true"
       :height="240"
       :fixed-header="true"
+      :disable-sort="true"
       :mobile-breakpoint="0"
       class="cardTable"
       item-key="name"
     />
+    <template v-slot:footer>
+      <external-link
+        :url="'https://smooth-biz.metro.tokyo.lg.jp/archive/date.pdf'"
+        :label="$t('鉄道利用者数の推移（新宿、東京、渋谷、各駅エリア）')"
+      />
+    </template>
   </data-view>
 </template>
 
@@ -40,10 +51,12 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import { TranslateResult } from 'vue-i18n'
 import { ChartOptions, ChartData } from 'chart.js'
 import { ThisTypedComponentOptionsWithRecordProps } from 'vue/types/options'
 import DataView from '@/components/DataView.vue'
-import { triple as colors } from '@/utils/colors'
+import { getGraphSeriesStyle } from '@/utils/colors'
+import ExternalLink from '@/components/ExternalLink.vue'
 
 interface HTMLElementEvent<T extends HTMLElement> extends Event {
   currentTarget: T
@@ -60,11 +73,12 @@ type Computed = {
       label: string
       data: number[]
       backgroundColor: string
+      borderColor: string
       borderWidth: number
     }[]
   }
   tableHeaders: {
-    text: string
+    text: TranslateResult
     value: string
   }[]
   tableData: {
@@ -115,7 +129,7 @@ const options: ThisTypedComponentOptionsWithRecordProps<
   created() {
     this.canvas = process.browser
   },
-  components: { DataView },
+  components: { DataView, ExternalLink },
   props: {
     title: {
       type: String,
@@ -155,12 +169,14 @@ const options: ThisTypedComponentOptionsWithRecordProps<
   }),
   computed: {
     displayData() {
+      const graphSeries = getGraphSeriesStyle(this.chartData.labels!.length)
       const datasets = this.chartData.labels!.map((label, i) => {
         return {
           label: label as string,
           data: this.chartData.datasets!.map(d => d.data![i]) as number[],
-          backgroundColor: colors[i],
-          borderWidth: 0
+          backgroundColor: graphSeries[i].fillColor,
+          borderColor: graphSeries[i].strokeColor,
+          borderWidth: 1
         }
       })
       return {
@@ -170,7 +186,7 @@ const options: ThisTypedComponentOptionsWithRecordProps<
     },
     tableHeaders() {
       return [
-        { text: '', value: 'text' },
+        { text: this.$t('日付'), value: 'text' },
         ...this.chartData.labels!.map((text, value) => {
           return { text: text as string, value: String(value) }
         })
@@ -248,6 +264,17 @@ const options: ThisTypedComponentOptionsWithRecordProps<
         Object.assign(options, { animation: { duration: 0 } })
       }
       return options
+    }
+  },
+  mounted() {
+    const barChart = this.$refs.barChart as Vue
+    const barElement = barChart.$el
+    const canvas = barElement.querySelector('canvas')
+    const labelledbyId = `${this.titleId}-graph`
+
+    if (canvas) {
+      canvas.setAttribute('role', 'img')
+      canvas.setAttribute('aria-labelledby', labelledbyId)
     }
   }
 }
